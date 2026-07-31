@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=1280, height=720, initial-scale=1.0">
+  <title>Nexus Explorer: Guardian Cartesiano </title>
+  <style>
+    :root {
+      --bg-color: #02040a;
+      --panel-bg: rgba(6, 15, 30, 0.94);
+      --neon-cyan: #00f3ff;
+      --neon-magenta: #ff0055;
+      --neon-yellow: #ffea00;
+      --neon-green: #00ff66;
+      --text-color: #e0f8ff;
+      --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+
+      /* PALETA EXCLUSIVA GUARDIANA */
+      --g-navy: #16315C;
+      --g-cobalt: #005ECA;
+      --g-emerald: #0F9A60;
+      --g-mint: #8BFA88;
+      --g-silver: #E5EDE1;
+      --g-gold: #9F906E;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--font-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #starfield {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0;
+    }
+
+    #cockpit-container {
+      position: relative;
+      z-index: 10;
+      width: 1280px;
+      height: 720px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px;
+      background: radial-gradient(circle at center, transparent 40%, rgba(2, 6, 16, 0.95) 90%);
+      box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+    }
+
+    .hud-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--panel-bg);
+      border: 2px solid rgba(0, 243, 255, 0.4);
+      border-radius: 8px;
+      padding: 6px 20px;
+      font-size: 1.05rem;
+      color: var(--neon-cyan);
+      text-shadow: 0 0 6px var(--neon-cyan);
+      backdrop-filter: blur(4px);
+      position: relative;
+    }
+
+    .btn-bgm-control {
+      background: rgba(0, 243, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-cyan);
+      padding: 2px 8px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-bgm-control:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 8px var(--neon-cyan);
+    }
+
+    .falling-shield-fx {
+      position: absolute;
+      font-size: 1.4rem;
+      pointer-events: none;
+      z-index: 999;
+      animation: shieldFallAnim 1.2s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards;
+      filter: drop-shadow(0 0 8px var(--neon-magenta));
+    }
+
+    @keyframes shieldFallAnim {
+      0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+      30% { transform: translateY(20px) scale(1.4) rotate(-15deg); opacity: 0.9; }
+      100% { transform: translateY(450px) scale(0.3) rotate(180deg); opacity: 0; }
+    }
+
+    .cockpit-grid {
+      display: grid;
+      grid-template-columns: 290px 1fr 340px;
+      gap: 12px;
+      height: calc(100% - 48px);
+    }
+
+    .side-panel {
+      background: var(--panel-bg);
+      border: 2px solid rgba(0, 243, 255, 0.35);
+      border-radius: 12px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 20px rgba(0,0,0,0.8), inset 0 0 15px rgba(0, 243, 255, 0.1);
+    }
+
+    .panel-header {
+      font-size: 0.78rem;
+      color: var(--neon-yellow);
+      letter-spacing: 1.2px;
+      font-weight: bold;
+      text-align: center;
+      border-bottom: 1px solid rgba(0, 243, 255, 0.2);
+      padding-bottom: 4px;
+      margin-bottom: 6px;
+    }
+
+    .master-switches {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .btn-master {
+      padding: 6px 4px;
+      font-size: 0.65rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      transition: all 0.2s;
+    }
+
+    .btn-master.turn-on {
+      background: rgba(0, 255, 102, 0.15); border-color: var(--neon-green); color: var(--neon-green);
+    }
+    .btn-master.turn-on:hover { background: var(--neon-green); color: #000; box-shadow: 0 0 12px var(--neon-green); }
+
+    .btn-master.turn-off {
+      background: rgba(255, 0, 85, 0.15); border-color: var(--neon-magenta); color: var(--neon-magenta);
+    }
+    .btn-master.turn-off:hover { background: var(--neon-magenta); color: #fff; box-shadow: 0 0 12px var(--neon-magenta); }
+
+    .switch-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 5px;
+      flex: 1;
+      align-content: center;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
+    .btn-switch {
+      background: #060d17;
+      border: 2px solid #1a3554;
+      border-radius: 8px;
+      padding: 6px 3px;
+      color: #5d7d9a;
+      font-size: 0.60rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      line-height: 1.15;
+      gap: 3px;
+      min-height: 50px;
+      transition: transform 0.1s ease, background 0.2s, border-color 0.2s, box-shadow 0.2s;
+      box-shadow: inset 0 0 5px rgba(0,0,0,0.8);
+      word-break: break-word;
+    }
+
+    .btn-switch:active { transform: scale(0.88); }
+    .btn-switch .emoji-icon { font-size: 1.0rem; filter: grayscale(80%); transition: filter 0.2s, transform 0.2s; }
+    .btn-switch.active {
+      border-color: var(--neon-cyan);
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(0, 243, 255, 0.35), rgba(0, 100, 200, 0.7));
+      box-shadow: 0 0 10px var(--neon-cyan), inset 0 0 8px #ffffff;
+      text-shadow: 0 0 6px #ffffff;
+    }
+    .btn-switch.active .emoji-icon { filter: grayscale(0%); transform: scale(1.1); }
+
+    .quadrant-panel {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .btn-quad {
+      background: rgba(12, 24, 43, 0.9);
+      border: 2px solid rgba(0, 243, 255, 0.35);
+      color: var(--text-color);
+      padding: 10px 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+    }
+
+    .btn-quad.selected {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 15px var(--neon-cyan);
+      border-color: #fff;
+    }
+
+    .comms-box {
+      position: relative;
+      background: var(--g-navy);
+      border: 3px solid var(--g-mint);
+      border-radius: 10px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: center;
+      box-shadow: 0 0 18px rgba(139, 250, 136, 0.3), inset 0 0 15px rgba(0, 94, 202, 0.5);
+      overflow: hidden;
+    }
+
+    .comms-box::after {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: 
+        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.4) 50%), 
+        linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+      z-index: 10;
+      background-size: 100% 4px, 6px 100%;
+      pointer-events: none;
+      animation: crtFlicker 0.18s infinite;
+      box-shadow: inset 0 0 18px rgba(0, 0, 0, 0.8);
+    }
+
+    @keyframes crtFlicker {
+      0% { opacity: 0.94; }
+      50% { opacity: 1.0; }
+      100% { opacity: 0.96; }
+    }
+
+    canvas#avatarCanvas {
+      width: 280px; 
+      height: 180px;
+      background: #081224;
+      border: 2px solid var(--g-emerald);
+      border-radius: 6px;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    .dialogue-container {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      margin: 6px 0;
+      min-height: 220px;
+      gap: 8px;
+    }
+
+    .dialogue-text {
+      font-size: 0.88rem;
+      line-height: 1.45;
+      color: #e0f8ff;
+      text-shadow: 0 0 4px rgba(0, 243, 255, 0.4);
+      overflow-y: auto;
+      flex: 1;
+      height: 100%;
+      background: rgba(3, 14, 30, 0.95);
+      padding: 12px;
+      border-radius: 8px;
+      border: 2px solid var(--neon-cyan);
+      box-shadow: inset 0 0 15px rgba(0, 243, 255, 0.15);
+    }
+
+    .btn-dialogue-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+    }
+
+    .btn-dialogue {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 0.88rem;
+      font-weight: bold;
+      font-family: var(--font-main);
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid;
+      text-align: center;
+      transition: all 0.2s ease;
+      box-shadow: 0 0 8px rgba(0,0,0,0.5);
+    }
+
+    .btn-dialogue.green {
+      background: rgba(0, 255, 102, 0.15);
+      border-color: var(--neon-green);
+      color: var(--neon-green);
+    }
+    .btn-dialogue.green:hover {
+      background: var(--neon-green);
+      color: #000;
+      box-shadow: 0 0 12px var(--neon-green);
+    }
+
+    .btn-dialogue.magenta {
+      background: rgba(255, 0, 85, 0.15);
+      border-color: var(--neon-magenta);
+      color: var(--neon-magenta);
+    }
+    .btn-dialogue.magenta:hover {
+      background: var(--neon-magenta);
+      color: #fff;
+      box-shadow: 0 0 12px var(--neon-magenta);
+    }
+
+    .btn-dialogue.cyan {
+      background: rgba(0, 243, 255, 0.15);
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+    .btn-dialogue.cyan:hover {
+      background: var(--neon-cyan);
+      color: #000;
+      box-shadow: 0 0 12px var(--neon-cyan);
+    }
+
+    .dialogue-text::-webkit-scrollbar { width: 6px; }
+    .dialogue-text::-webkit-scrollbar-track { background: rgba(2, 6, 16, 0.8); border-radius: 4px; }
+    .dialogue-text::-webkit-scrollbar-thumb { background: var(--neon-cyan); border-radius: 4px; box-shadow: 0 0 6px var(--neon-cyan); }
+
+    .center-column {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    .viewscreen-box {
+      background: rgba(2, 6, 14, 0.85);
+      border: 2px solid rgba(0, 243, 255, 0.5);
+      border-radius: 12px;
+      padding: 6px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 0 25px rgba(0, 243, 255, 0.15);
+    }
+
+    canvas#gridCanvas {
+      width: 580px;
+      height: 310px;
+      background: transparent;
+      border-radius: 6px;
+    }
+
+    .timer-container {
+      width: 100%;
+      height: 8px;
+      background: #081220;
+      border-radius: 4px;
+      margin-top: 4px;
+      overflow: hidden;
+      border: 1px solid rgba(0, 243, 255, 0.3);
+    }
+
+    #timer-bar {
+      height: 100%;
+      width: 100%;
+      background: var(--neon-cyan);
+      box-shadow: 0 0 8px var(--neon-cyan);
+      transition: width 0.1s linear;
+    }
+
+    .bottom-controls {
+      background: var(--panel-bg);
+      border: 2px solid rgba(0, 243, 255, 0.4);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .coord-monitors {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 155px;
+    }
+
+    .coord-field {
+      background: #050c17;
+      border: 2px solid rgba(0, 243, 255, 0.3);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    .coord-field.active-field {
+      border-color: var(--neon-yellow);
+      box-shadow: 0 0 10px rgba(255, 234, 0, 0.4);
+    }
+
+    .coord-label { font-size: 1rem; font-weight: bold; color: var(--neon-cyan); }
+    .coord-value { font-size: 1.2rem; font-weight: bold; font-family: monospace; color: #fff; }
+
+    .btn-sign {
+      background: #101f36;
+      border: 1px solid var(--neon-cyan);
+      color: var(--neon-yellow);
+      padding: 4px 6px;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      flex: 1;
+    }
+
+    .btn-key {
+      background: #0b1729;
+      border: 1px solid rgba(0, 243, 255, 0.35);
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: bold;
+      padding: 12px 4px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .btn-key:active { background: var(--neon-cyan); color: #000; transform: scale(0.92); }
+    .btn-key.delete-key { color: var(--neon-magenta); border-color: var(--neon-magenta); font-size: 0.9rem; }
+
+    .btn-execute {
+      background: linear-gradient(135deg, #ff0055, #9900ff);
+      border: none;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: bold;
+      padding: 0 12px;
+      height: 104px;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 18px rgba(255, 0, 85, 0.5);
+      letter-spacing: 1px;
+      width: 130px;
+      transition: transform 0.1s;
+    }
+
+    .btn-execute:active { transform: scale(0.94); }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      backdrop-filter: blur(6px);
+    }
+
+    .modal-content {
+      background: #08101d;
+      border: 3px solid var(--neon-cyan);
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 620px;
+      width: 92%;
+      max-height: 85vh;
+      overflow-y: auto;
+      color: var(--text-color);
+      box-shadow: 0 0 35px rgba(0, 243, 255, 0.3);
+    }
+
+    #manual-modal .modal-content h3 {
+      color: var(--neon-cyan);
+      margin-top: 15px;
+      margin-bottom: 5px;
+      font-size: 1rem;
+    }
+
+    #manual-modal .modal-content p {
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    #manual-modal .modal-content ul {
+      margin-left: 20px;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+    }
+
+    #manual-modal .modal-content li {
+      margin-bottom: 5px;
+    }
+
+    #manual-modal .manual-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+
+    #manual-modal .manual-table th, #manual-modal .manual-table td {
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      padding: 6px;
+      text-align: left;
+    }
+
+    #manual-modal .manual-table th {
+      background-color: rgba(0, 243, 255, 0.1);
+      color: var(--neon-yellow);
+    }
+
+    #manual-modal .quote {
+      font-style: italic;
+      color: #88b0d8;
+      padding: 8px;
+      background-color: rgba(6, 15, 30, 0.5);
+      border-left: 3px solid var(--g-mint);
+      margin-bottom: 10px;
+      font-size: 0.8rem;
+    }
+
+    .rank-card {
+      background: rgba(2, 12, 28, 0.8);
+      border: 1px solid rgba(0, 243, 255, 0.3);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .rank-card h3 {
+      font-size: 0.95rem;
+      color: var(--neon-yellow);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .rank-card p {
+      font-size: 0.8rem;
+      line-height: 1.35;
+      color: #d1ecf4;
+    }
+
+    .close-btn {
+      background: var(--neon-cyan);
+      color: #000;
+      border: none;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 10px;
+      transition: background 0.2s;
+    }
+
+    .close-btn:hover { background: #fff; }
+  </style>
+</head>
+<body>
+
+  <canvas id="starfield"></canvas>
+
+  <!-- PANTALLA INICIAL DE CONEXIÓN DE AUDIO -->
+  <div id="start-overlay" class="modal" style="display: flex; z-index: 1000; background: rgba(2, 4, 10, 0.96);">
+    <div class="modal-content" style="text-align: center; max-width: 460px; border-color: var(--neon-cyan);">
+      <h1 style="color: var(--neon-cyan); font-size: 1.6rem; margin-bottom: 10px; text-shadow: 0 0 10px var(--neon-cyan);">NEXUS EXPLORER</h1>
+      <p style="color: var(--text-color); font-size: 0.95rem; margin-bottom: 22px; line-height: 1.4;">
+        Sistemas tácticos listos.<br>Presiona el botón para establecer conexión de voz con la Guardiana Diamante.
+      </p>
+      <button class="btn-execute" style="width: 100%; height: 50px; font-size: 1.05rem; cursor: pointer;" onclick="startGameSession()">
+        ⚡ INICIAR CONEXIÓN
+      </button>
+    </div>
+  </div>
+
+  <div id="cockpit-container">
+    
+    <div class="hud-top" id="hud-bar">
+      <div>SECTOR: <strong id="val-sector" style="color:#fff;">1</strong></div>
+      <div>RANGO: <strong id="val-rank" style="color:var(--neon-yellow);">Cadete</strong></div>
+      <div>PUNTOS: <strong id="val-score" style="color:var(--neon-green);">0</strong></div>
+      <div>ESCUDOS: <span id="val-shields" style="color:var(--neon-magenta);">🛡️🛡️🛡️</span></div>
+      <div>
+        <button id="btn-bgm" class="btn-bgm-control" onclick="toggleBGM()">🎵 MÚSICA: ON</button>
+      </div>
+    </div>
+
+    <div class="cockpit-grid">
+      
+      <!-- IZQUIERDA: SISTEMAS AUXILIARES -->
+      <div class="side-panel">
+        <div class="panel-header">SISTEMAS AUXILIARES</div>
+        
+        <div class="master-switches">
+          <button class="btn-master turn-on" onclick="setAllSwitches(true)">⚡ ENCENDER</button>
+          <button class="btn-master turn-off" onclick="setAllSwitches(false)">🛑 APAGAR</button>
+        </div>
+
+        <div class="switch-grid" id="switch-grid-container"></div>
+
+        <div style="display:flex; gap:4px; margin-top:4px;">
+          <button style="flex:1; background:#091424; border:1px solid rgba(0,243,255,0.3); color:#88b0d8; padding:5px; font-size:0.68rem; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="openModal('manual-modal')">📖 MANUAL</button>
+          <button style="flex:1; background:#120924; border:1px solid rgba(255,234,0,0.5); color:var(--neon-yellow); padding:5px; font-size:0.68rem; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="openModal('ranks-modal')">🏆 RANGOS</button>
+        </div>
+      </div>
+
+      <!-- CENTRO: RADAR CARTESIANO -->
+      <div class="center-column">
+        
+        <div class="viewscreen-box">
+          <canvas id="gridCanvas" width="580" height="310"></canvas>
+          <div class="timer-container">
+            <div id="timer-bar"></div>
+          </div>
+        </div>
+
+        <div class="bottom-controls">
+          <div class="coord-monitors">
+            <div class="coord-field active-field" id="field-X" onclick="setActiveField('X')">
+              <span class="coord-label">X:</span>
+              <span class="coord-value" id="disp-X">+0</span>
+              <button class="btn-sign" onclick="toggleSign('X', event)">+/-</button>
+            </div>
+            <div class="coord-field" id="field-Y" onclick="setActiveField('Y')">
+              <span class="coord-label">Y:</span>
+              <span class="coord-value" id="disp-Y">+0</span>
+              <button class="btn-sign" onclick="toggleSign('Y', event)">+/-</button>
+            </div>
+          </div>
+
+          <div class="keypad-grid">
+            <button class="btn-key" onclick="pressKey('1')">1</button>
+            <button class="btn-key" onclick="pressKey('2')">2</button>
+            <button class="btn-key" onclick="pressKey('3')">3</button>
+            <button class="btn-key delete-key" onclick="pressKey('DEL')">⌫</button>
+            <button class="btn-key" onclick="pressKey('4')">4</button>
+            <button class="btn-key" onclick="pressKey('5')">5</button>
+            <button class="btn-key" onclick="pressKey('6')">6</button>
+            <button class="btn-key" style="font-size:0.8rem; color:var(--neon-yellow);" onclick="switchField()">X↔Y</button>
+            <button class="btn-key" onclick="pressKey('7')">7</button>
+            <button class="btn-key" onclick="pressKey('8')">8</button>
+            <button class="btn-key" onclick="pressKey('9')">9</button>
+            <button class="btn-key" onclick="pressKey('0')">0</button>
+          </div>
+
+          <button class="btn-execute" onclick="executeManeuver()">🚀 EJECUTAR</button>
+        </div>
+
+      </div>
+
+      <!-- DERECHA: GUARDIANA Y CUADRANTES -->
+      <div class="side-panel">
+        
+        <div class="comms-box">
+          <canvas id="avatarCanvas" width="280" height="180"></canvas>
+          <div style="font-size:0.75rem; color:var(--g-mint); font-weight:bold; letter-spacing:1px; margin-top:2px;">GUARDIANA DIAMANTE</div>
+        </div>
+
+        <div class="dialogue-container">
+          <div class="dialogue-text" id="guardian-msg">Sintonizando frecuencias místicas de navegación...</div>
+          <div class="btn-dialogue-container" id="guardian-buttons" style="display: none;"></div>
+        </div>
+
+        <div>
+          <div class="panel-header">SELECCIONAR CUADRANTE</div>
+          <div class="quadrant-panel">
+            <button class="btn-quad" id="quad-1" onclick="selectQuad('1')">C-1 (+,+)</button>
+            <button class="btn-quad" id="quad-2" onclick="selectQuad('2')">C-2 (-,+)</button>
+            <button class="btn-quad" id="quad-3" onclick="selectQuad('3')">C-3 (-,-)</button>
+            <button class="btn-quad" id="quad-4" onclick="selectQuad('4')">C-4 (+,-)</button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL RANGOS -->
+  <div id="ranks-modal" class="modal">
+    <div class="modal-content">
+      <h2 style="color:var(--neon-yellow); margin-bottom:12px; font-size:1.2rem; text-align:center;">🏆 RANGOS DE VUELO - ARCHIVOS DE LA GUARDIANA</h2>
+      <p style="font-size:0.8rem; color:#88b0d8; margin-bottom:12px; text-align:center;"><em>"Escucha con atención, piloto. Cada rango en nuestro Nexus tiene una historia... y créeme, he visto bastantes locuras."</em> — Guardiana Diamante</p>
+
+      <div class="rank-card">
+        <h3><span>1. Cadete Espacial</span> <small style="color:var(--neon-cyan);">0 - 3 Puntos</small></h3>
+        <p><em>"¡Ah, la inocencia! Aún recuerdo a un cadete que intentó esquivar un asteroide usando el freno de mano de su nave... Spoiler: las naves espaciales no tienen freno de mano. Terminó flotando en reversa hasta el Sector 4. Al menos tú no has destruido la consola principal todavía."</em></p>
+      </div>
+
+      <div class="rank-card">
+        <h3><span>2. Rastreador Táctico</span> <small style="color:var(--neon-cyan);">4 - 7 Puntos</small></h3>
+        <p><em>"Empiezas a distinguir la parte delantera de tu nave de la trasera, ¡un avance notable! Una vez un Rastreador confundió un agujero negro supermasivo con 'un simple lunar en la pantalla táctil'. Limpió el visor con su manga y casi nos desintegra a todos."</em></p>
+      </div>
+
+      <div class="rank-card">
+        <h3><span>3. Navegante Estelar</span> <small style="color:var(--neon-cyan);">8 - 11 Puntos</small></h3>
+        <p><em>"¡Sientes la corriente cartesiana! El eje X ya no es tu enemigo jurado y el eje Y te saluda al pasar. Sabes tanto de rumbo que una vez un grupo de piratas estelares se detuvo solo para pedirle indicaciones a uno de mis Navegantes."</em></p>
+      </div>
+
+      <div class="rank-card">
+        <h3><span>4. Piloto Intergaláctico</span> <small style="color:var(--neon-cyan);">12 - 15 Puntos</small></h3>
+        <p><em>"¡Esa sí es maniobrabilidad! Los asteroides prácticamente piden permiso antes de cruzarse en tu camino. Mi faceta izquierda brilló de pura emoción cuando ejecutaste esa última evasión a milímetros del impacto. ¡Así se vuela!"</em></p>
+      </div>
+
+      <div class="rank-card">
+        <h3><span>5. Comandante de Flota</span> <small style="color:var(--neon-cyan);">16 - 19 Puntos</small></h3>
+        <p><em>"Tus reflejos rivalizan con la velocidad de la luz. Me recuerdas a los antiguos Capitanes del Enclave Cristalino... salvo por tu divertido hábito de presionar todos los botones del panel cuando te entra el pánico."</em></p>
+      </div>
+
+      <div class="rank-card">
+        <h3><span>6. Estratega del Cosmos</span> <small style="color:var(--neon-cyan);">20 - 23 Puntos</small></h3>
+        <p><em>"Calculas coordenadas complejas mientras te tomas un café subespacial. Los cazas enemigos prefieren solicitar transferencia inmediata a otro sistema solar antes de tener que enfrentarse a tu plano cartesiano."</em></p>
+      </div>
+
+      <div class="rank-card">
+        <h3><span>7. Leyenda del Continuo</span> <small style="color:var(--neon-cyan);">24+ Puntos</small></h3>
+        <p><em>"¡Sublime! Tu nombre ha quedado grabado para siempre en el cristal supremo de la dimensión. Incluso yo, la Guardiana Diamante, me inclino ante tu maestría. ¡Eres una leyenda viviente!"</em></p>
+      </div>
+
+      <button class="close-btn" onclick="closeModal('ranks-modal')">CERRAR REGISTRO</button>
+    </div>
+  </div> 
+
+  <!-- MODAL MANUAL DE OPERACIONES (INTEGRADO) -->
+  <div id="manual-modal" class="modal">
+    <div class="modal-content">
+      <h2 style="color:var(--neon-cyan); margin-bottom:12px; font-size:1.2rem; text-align:center;">🚀 MANUAL DE OPERACIONES TÁCTICAS</h2>
+      <p style="font-size:0.8rem; color:#88b0d8; margin-bottom:12px; text-align:center;"><em>(Edición de Supervivencia para Pilotos Despistados)</em></p>
+      
+      <div class="quote">
+        "Bienvenido a la cabina del Nexus Explorer. Si estás leyendo esto, es porque abriste los ojos, te diste cuenta de que compraste una nave estelar de clase experimental en una subasta holográfica creyendo que estabas ofertando por una máquina de espresso industrial, y ahora tienes a tu cargo un reactor de plasma y a una entidad mística atrapada en un monitor CRT que juzga cada uno de tus clics. No te preocupes: el pánico es completamente normal durante los primeros treinta segundos. Después de eso, es un riesgo para la estructura de la nave."
+        <br><strong style="color:var(--neon-yellow)">— Guardiana Diamante</strong>
+      </div>
+
+      <h3>🌐 Módulo 1: Navegación Cartesiana y Vectorial</h3>
+      <p>El radar central opera en un plano cartesiano bidimensional ampliado (de -100 a 100). Para ejecutar un salto y no terminar incrustado en la luna más cercana, debes ingresar tres datos:</p>
+      <ul>
+        <li><strong>Coordenada X (Eje Horizontal):</strong> Posición a la izquierda (signo -) o derecha (signo +).</li>
+        <li><strong>Coordenada Y (Eje Vertical):</strong> Posición abajo (signo -) o arriba (signo +).</li>
+        <li><strong>Selección del Cuadrante Táctico:</strong> Confirmación manual del sector espacial según los signos del vector.</li>
+      </ul>
+      <div class="quote">"Si ves un signo menos y decides ignorarlo porque 'no te gustan los números negativos', te garantizo que el asteroide que viene de frente sí será muy positivo respecto a destruirte."</div>
+
+      <table class="manual-table">
+        <thead>
+          <tr>
+            <th>Abrev.</th>
+            <th>Cuadrante</th>
+            <th>Signos (X,Y)</th>
+            <th>Ubicación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>C-1</strong></td>
+            <td>Cuadrante 1</td>
+            <td>(+, +)</td>
+            <td>Sup. Derecho</td>
+          </tr>
+          <tr>
+            <td><strong>C-2</strong></td>
+            <td>Cuadrante 2</td>
+            <td>(-, +)</td>
+            <td>Sup. Izquierdo</td>
+          </tr>
+          <tr>
+            <td><strong>C-3</strong></td>
+            <td>Cuadrante 3</td>
+            <td>(-, -)</td>
+            <td>Inf. Izquierdo</td>
+          </tr>
+          <tr>
+            <td><strong>C-4</strong></td>
+            <td>Cuadrante 4</td>
+            <td>(+, -)</td>
+            <td>Inf. Derecho</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>⚙️ Módulo 2: Control de Sistemas Auxiliares</h3>
+      <p>A la izquierda tienes 12 interruptores críticos. Revisa el comunicador antes de cada maniobra:</p>
+      <ul>
+        <li>Si un sistema muestra 🟢, DEBE estar <strong>encendido</strong>.</li>
+        <li>Si muestra 🔴, <strong>apágalo</strong> de inmediato.</li>
+        <li>Usa <code>⚡ ENCENDER</code> o <code>🛑 APAGAR</code> para controlar todo el panel rápidamente.</li>
+      </ul>
+      <div class="quote">"No, apagar los sistemas de refrigeración criogénica no hará que la nave 'se sienta más calientita y acogedora'. Apágalos solo si te lo pido, a menos que quieras cocinar tus propios circuitos."</div>
+
+      <h3>📺 Módulo 3: El Comunicador CRT y la Barra Táctica</h3>
+      <p>Revisa el Grimoire Táctico para mis instrucciones. Presta atención a la Barra Táctica de Tiempo en la parte inferior del visor. Si llega a cero antes de presionar <code>🚀 EJECUTAR</code>, la nave sufrirá un fallo de contención.</p>
+      <div class="quote">"Si ves que la pantalla CRT parpadea, no intentes darle un golpe al monitor por un lado. Soy un ser diamantino ancestral, no un televisor de los años 90."</div>
+
+      <h3>🛡️ Módulo 4: Escudos y Avance</h3>
+      <p>Cuentas con <strong>3 cargas de escudo (🛡️)</strong>. Cualquier error consumirá una carga. Cada 3 saltos exitosos avanzarás de sector, aumentando la velocidad y dificultad. Si llegas a 0 escudos, la misión termina.</p>
+      <div class="quote">"Perder los escudos significa convertirnos en polvo estelar brillante. Admito que se vería muy poético desde lejos, pero preferiría que mantengas tus dedos lejos de las coordenadas equivocadas."</div>
+
+      <button class="close-btn" onclick="closeModal('manual-modal')">ENTENDIDO, A VOLAR</button>
+    </div>
+  </div>
+
+  <div id="gameover-modal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h2 style="color: var(--neon-magenta); margin-bottom:10px;">ENLACE PERDIDO</h2>
+      <p>La nave ha agotado sus escudos de contención.</p>
+      <div style="margin: 15px 0; font-size:1.1rem;">
+        Puntuación: <strong id="go-score" style="color:var(--neon-green);">0</strong> | Sector: <strong id="go-sector" style="color:var(--neon-yellow);">1</strong>
+      </div>
+      <button class="close-btn" onclick="resetGame()" style="background:var(--neon-green);">REINICIAR MISIÓN</button>
+    </div>
+  </div>
+
+  <!-- MODAL GAME OVER -->
+  <div id="gameover-modal" class="modal">
+    <div class="modal-content" style="text-align: center;">
+      <h2 style="color: var(--neon-magenta); margin-bottom:10px;">ENLACE PERDIDO</h2>
+      <p>La nave ha agotado sus escudos de contención.</p>
+      <div style="margin: 15px 0; font-size:1.1rem;">
+        Puntuación: <strong id="go-score" style="color:var(--neon-green);">0</strong> | Sector: <strong id="go-sector" style="color:var(--neon-yellow);">1</strong>
+      </div>
+      <button class="close-btn" onclick="resetGame()" style="background:var(--neon-green);">REINICIAR MISIÓN</button>
+    </div>
+  </div>
+
+  <script>
+    // ==============================================================================
+    // === REPRODUCTOR DE MÚSICA EN BUCLE (BGM MANAGER) =============================
+    // ==============================================================================
+    const BGM_TRACKS = [
+      "Cartesian Static.mp3",
+      "Grid Signal.mp3",
+      "Sector X-Y Coordinates Locked.mp3",
+      "Transmission at (0,0).mp3"
+    ];
+
+    class BGMManager {
+      constructor(playlist) {
+        this.playlist = playlist;
+        this.currentIndex = 0;
+        this.audio = new Audio();
+        this.audio.volume = 0.35; // Volumen moderado de fondo
+        this.isPlaying = false;
+        this.isMuted = false;
+
+        // Cuando la pista termina, pasa automáticamente a la siguiente en bucle
+        this.audio.addEventListener('ended', () => this.nextTrack());
+
+        // Si ocurre un error cargando la pista (ej. nombre de archivo), salta a la siguiente
+        this.audio.addEventListener('error', (e) => {
+          console.warn(`No se pudo cargar la pista: ${this.playlist[this.currentIndex]}. Pasando a la siguiente...`);
+          this.nextTrack();
+        });
+      }
+
+      start() {
+        if (this.isPlaying) return;
+        this.isPlaying = true;
+        this.loadAndPlay();
+      }
+
+      loadAndPlay() {
+        if (this.isMuted) return;
+        this.audio.src = encodeURI(this.playlist[this.currentIndex]);
+        this.audio.play().catch(err => {
+          console.log("Autoplay de audio bloqueado hasta interacción:", err);
+        });
+      }
+
+      nextTrack() {
+        this.currentIndex = (this.currentIndex + 1) % this.playlist.length;
+        this.loadAndPlay();
+      }
+
+      toggleMute() {
+        this.isMuted = !this.isMuted;
+        if (this.isMuted) {
+          this.audio.pause();
+        } else {
+          if (this.isPlaying) {
+            this.loadAndPlay();
+          }
+        }
+        return !this.isMuted;
+      }
+    }
+
+    const bgm = new BGMManager(BGM_TRACKS);
+
+    function toggleBGM() {
+      const active = bgm.toggleMute();
+      const btn = document.getElementById('btn-bgm');
+      if (btn) {
+        btn.innerText = active ? "🎵 MÚSICA: ON" : "🔇 MÚSICA: OFF";
+        btn.style.opacity = active ? "1" : "0.5";
+      }
+    }
+
+    // ==============================================================================
+    // === SINTETIZADOR DE AUDIO NATIVO (WEB AUDIO API) ===============================
+    // ==============================================================================
+    class SoundFXManager {
+      constructor() {
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playBlip() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+
+        gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.03);
+      }
+
+      playClick() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.04);
+        gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.04);
+      }
+
+      playSwitch(isOn) {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        let freq = isOn ? 650 : 320;
+        osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(isOn ? 900 : 180, this.ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.06, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.05);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+      }
+
+      playMasterSwitch(isOn) {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        let startF = isOn ? 150 : 800;
+        let endF = isOn ? 850 : 100;
+        osc.frequency.setValueAtTime(startF, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(endF, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.07, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.15);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.15);
+      }
+
+      playQuadSelect() {
+        this.init(); if (!this.ctx) return;
+        [523.25, 659.25, 783.99].forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + i * 0.03);
+          gain.gain.setValueAtTime(0.05, this.ctx.currentTime + i * 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.03 + 0.08);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + i * 0.03);
+          osc.stop(this.ctx.currentTime + i * 0.03 + 0.08);
+        });
+      }
+
+      playSuccess() {
+        this.init(); if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((f, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(f, this.ctx.currentTime + i * 0.06);
+          gain.gain.setValueAtTime(0.07, this.ctx.currentTime + i * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + i * 0.06 + 0.12);
+          osc.connect(gain); gain.connect(this.ctx.destination);
+          osc.start(this.ctx.currentTime + i * 0.06);
+          osc.stop(this.ctx.currentTime + i * 0.06 + 0.12);
+        });
+      }
+
+      playError() {
+        this.init(); if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(this.ctx.destination);
+        osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+      }
+
+      playShieldLoss() {
+        this.init(); if (!this.ctx) return;
+        const bufferSize = this.ctx.sampleRate * 0.35;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(900, this.ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.35);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.35);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+      }
+    }
+
+    const sfx = new SoundFXManager();
+
+    // === SISTEMAS AUXILIARES EN ESPAÑOL ===
+    const AUX_SYSTEMS = [
+      { id: 'shield', name: 'Escudos Deflectores de Fase', emoji: '🛡️' },
+      { id: 'plasma', name: 'Inyector Torpedos de Plasma', emoji: '⚡' },
+      { id: 'grav', name: 'Compresor Gravitacional', emoji: '🌀' },
+      { id: 'hiper', name: 'Motor de Hipervelocidad', emoji: '🚀' },
+      { id: 'vent', name: 'Refrigerante Criogénico', emoji: '❄️' },
+      { id: 'comms', name: 'Enlace Trans-Cuántico', emoji: '📻' },
+      { id: 'target', name: 'Radar de Escáner Táctico', emoji: '🎯' },
+      { id: 'battery', name: 'Célula de Materia Oscura', emoji: '🔋' },
+      { id: 'sat', name: 'Matriz Reconocimiento', emoji: '🛰️' },
+      { id: 'warp', name: 'Núcleo de Distorsión Warp', emoji: '🔮' },
+      { id: 'lights', name: 'Focos Fotónicos Exteriores', emoji: '💡' },
+      { id: 'anchor', name: 'Ancla Inercial Gravitatoria', emoji: '⚓' }
+    ];
+
+    let switches = {};
+    let requiredSwitches = {};
+
+    // === FONDO ESTRELLADO ===
+    const starCanvas = document.getElementById('starfield');
+    const starCtx = starCanvas.getContext('2d');
+    let stars = [];
+
+    function initStars() {
+      starCanvas.width = window.innerWidth;
+      starCanvas.height = window.innerHeight;
+      stars = [];
+      for (let i = 0; i < 160; i++) {
+        stars.push({
+          x: Math.random() * starCanvas.width,
+          y: Math.random() * starCanvas.height,
+          size: Math.random() * 2,
+          speed: Math.random() * 0.5 + 0.1
+        });
+      }
+    }
+
+    function renderStars() {
+      starCtx.clearRect(0, 0, starCanvas.width, starCanvas.height);
+      starCtx.fillStyle = "#ffffff";
+      for (let s of stars) {
+        s.y += s.speed;
+        if (s.y > starCanvas.height) s.y = 0;
+        starCtx.beginPath();
+        starCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        starCtx.fill();
+      }
+      requestAnimationFrame(renderStars);
+    }
+    window.addEventListener('resize', initStars);
+    initStars();
+    renderStars();
+
+    // === ESTADO DEL JUEGO ===
+    const RANKS = ["Cadete", "Rastreador", "Navegante", "Piloto", "Comandante", "Estratega", "Leyenda"];
+    let score = 0;
+    let sector = 1;
+    let shields = 3;
+    let selectedQuadrant = "";
+    let targetX = 0, targetY = 0;
+
+    let activeField = 'X';
+    let valXStr = "0", signX = 1;
+    let valYStr = "0", signY = 1;
+
+    let timerInterval = null;
+    let timeRemaining = 100;
+    let isPaused = false;
+
+    const gridCanvas = document.getElementById('gridCanvas');
+    const gridCtx = gridCanvas.getContext('2d');
+
+    // NAVE Y FÍSICA
+    let shipPos = { x: 0, y: 0 };
+    let shipTarget = { x: 0, y: 0 };
+    let shipAngle = 0;
+    let shipTrail = [];
+
+    let asteroids = [];
+    function initAsteroids() {
+      asteroids = [];
+      for (let i = 0; i < 8; i++) {
+        asteroids.push({
+          x: (Math.random() * 200 - 100),
+          y: (Math.random() * 200 - 100),
+          size: Math.random() * 8 + 6,
+          vx: (Math.random() - 0.5) * 0.15,
+          vy: (Math.random() - 0.5) * 0.15,
+          rot: Math.random() * Math.PI * 2,
+          rotSpeed: (Math.random() - 0.5) * 0.03
+        });
+      }
+    }
+
+    let enemyShips = [];
+    function spawnEnemySquadron() {
+      enemyShips = [];
+      const enemyTypes = [
+        { name: "Caza Sombra", color: "#ff0055", glow: "rgba(255,0,85,0.8)" },
+        { name: "Crucero de Plasma", color: "#aa00ff", glow: "rgba(170,0,255,0.8)" },
+        { name: "Interceptor Veloce", color: "#ff9900", glow: "rgba(255,153,0,0.8)" }
+      ];
+
+      for (let i = 0; i < 4; i++) {
+        let type = enemyTypes[i % enemyTypes.length];
+        enemyShips.push({
+          x: (Math.random() * 180 - 90),
+          y: (Math.random() * 180 - 90),
+          targetX: (Math.random() * 180 - 90),
+          targetY: (Math.random() * 180 - 90),
+          angle: Math.random() * Math.PI * 2,
+          scale: 0.7 + Math.random() * 0.4,
+          color: type.color,
+          glow: type.glow,
+          trail: []
+        });
+      }
+    }
+
+    // === RENDERIZADO PIXEL ART GUARDIANA ===
+    const mainAvatarCanvas = document.getElementById('avatarCanvas');
+    const mainCtx = mainAvatarCanvas.getContext('2d');
+
+    const pxCanvas = document.createElement('canvas');
+    pxCanvas.width = 42;
+    pxCanvas.height = 28;
+    const pxCtx = pxCanvas.getContext('2d');
+
+    let guardianTime = 0;
+
+    function renderPixelGuardian() {
+      guardianTime += 0.06;
+      const bobY = Math.floor(Math.sin(guardianTime * 1.5) * 1.2);
+      const bookFloat = Math.floor(Math.cos(guardianTime * 2.0) * 1.5);
+
+      pxCtx.clearRect(0, 0, 42, 28);
+
+      const C_NAVY = "#16315C";
+      const C_COBALT = "#005ECA";
+      const C_EMERALD = "#0F9A60";
+      const C_MINT = "#8BFA88";
+      const C_SILVER = "#E5EDE1";
+      const C_GOLD = "#9F906E";
+      const C_PURPLE = "#8A2BE2";
+
+      const bx = 3;
+      const by = 8 + bookFloat;
+
+      pxCtx.fillStyle = C_GOLD;
+      pxCtx.fillRect(bx, by, 8, 11);
+      pxCtx.fillStyle = C_SILVER;
+      pxCtx.fillRect(bx + 1, by + 1, 3, 9);
+      pxCtx.fillRect(bx + 4, by + 1, 3, 9);
+      pxCtx.fillStyle = C_NAVY;
+      pxCtx.fillRect(bx + 3, by + 1, 1, 9);
+
+      pxCtx.fillStyle = C_MINT;
+      if (Math.sin(guardianTime * 3) > 0) pxCtx.fillRect(bx + 1, by - 3, 1, 2);
+      if (Math.cos(guardianTime * 2.5) > 0) pxCtx.fillRect(bx + 5, by - 4, 2, 1);
+      pxCtx.fillRect(bx + 3, by - 2, 1, 1);
+
+      const gx = 22;
+      const gy = 6 + bobY;
+
+      pxCtx.fillStyle = C_GOLD;
+      pxCtx.fillRect(gx - 4, gy - 4, 9, 2);
+      pxCtx.fillStyle = C_EMERALD;
+      pxCtx.fillRect(gx, gy - 5, 1, 2);
+
+      pxCtx.fillStyle = C_COBALT;
+      pxCtx.fillRect(gx - 6, gy - 2, 13, 3);
+      pxCtx.fillRect(gx - 7, gy + 1, 3, 8);
+      pxCtx.fillRect(gx + 5, gy + 1, 3, 8);
+
+      pxCtx.fillStyle = C_SILVER;
+      pxCtx.fillRect(gx - 4, gy - 1, 9, 7);
+      pxCtx.fillRect(gx - 3, gy + 6, 7, 2);
+      pxCtx.fillRect(gx - 1, gy + 8, 3, 1);
+
+      pxCtx.fillStyle = "rgba(0, 94, 202, 0.4)";
+      pxCtx.fillRect(gx - 4, gy - 1, 4, 8);
+
+      pxCtx.fillStyle = C_MINT;
+      pxCtx.fillRect(gx - 3, gy + 2, 2, 1);
+      pxCtx.fillRect(gx + 2, gy + 2, 2, 1);
+
+      pxCtx.fillStyle = C_EMERALD;
+      pxCtx.fillRect(gx, gy + 6, 1, 1);
+      pxCtx.fillRect(gx - 8, gy + 9, 17, 3);
+
+      pxCtx.fillStyle = C_COBALT;
+      pxCtx.fillRect(gx - 6, gy + 12, 13, 10);
+
+      pxCtx.fillStyle = C_PURPLE;
+      pxCtx.fillRect(gx - 4, gy + 13, 2, 9);
+      pxCtx.fillRect(gx + 3, gy + 13, 2, 9);
+
+      pxCtx.fillStyle = C_NAVY;
+      pxCtx.fillRect(gx - 2, gy + 13, 5, 9);
+
+      pxCtx.fillStyle = C_MINT;
+      pxCtx.fillRect(gx, gy + 10, 1, 12);
+
+      let px1 = (gx - 10 + Math.floor(Math.sin(guardianTime * 2) * 3));
+      let py1 = (gy + 2 + Math.floor(Math.cos(guardianTime * 2) * 3));
+      pxCtx.fillRect(px1, py1, 1, 1);
+
+      let px2 = (gx + 10 + Math.floor(Math.cos(guardianTime * 2.5) * 3));
+      let py2 = (gy + 5 + Math.floor(Math.sin(guardianTime * 2.5) * 3));
+      pxCtx.fillRect(px2, py2, 1, 1);
+
+      mainCtx.clearRect(0, 0, mainAvatarCanvas.width, mainAvatarCanvas.height);
+      mainCtx.imageSmoothingEnabled = false;
+      mainCtx.drawImage(pxCanvas, 0, 0, mainAvatarCanvas.width, mainAvatarCanvas.height);
+
+      requestAnimationFrame(renderPixelGuardian);
+    }
+
+    // ==========================================
+    // MÁQUINA DE ESCRIBIR CON CALLBACK DE FINALIZACIÓN
+    // ==========================================
+    let typewriterTimeout = null;
+
+    function setGuardianText(text, speed = 20, onComplete = null) {
+      const container = document.getElementById('guardian-msg');
+      const btnContainer = document.getElementById('guardian-buttons');
+      if (!container) return;
+
+      if (typewriterTimeout) {
+        clearTimeout(typewriterTimeout);
+      }
+
+      container.innerHTML = '';
+      if (btnContainer) {
+        btnContainer.innerHTML = '';
+        btnContainer.style.display = 'none';
+      }
+
+      let index = 0;
+
+      function typeChar() {
+        if (index < text.length) {
+          if (text[index] === '<') {
+            let tag = '';
+            while (index < text.length && text[index] !== '>') {
+              tag += text[index];
+              index++;
+            }
+            tag += '>';
+            index++;
+            container.innerHTML += tag;
+          } else {
+            container.innerHTML += text[index];
+            if (text[index] !== ' ' && sfx && sfx.playBlip) {
+              sfx.playBlip();
+            }
+            index++;
+          }
+          typewriterTimeout = setTimeout(typeChar, speed);
+        } else {
+          if (onComplete) {
+            onComplete();
+          }
+        }
+      }
+
+      typeChar();
+    }
+
+    // === INICIO Y VERIFICACIÓN DE VUELO ===
+    function startGameSession() {
+      sfx.init();
+      sfx.playMasterSwitch(true);
+      bgm.start(); // Inicia el reproductor de música en bucle
+      document.getElementById('start-overlay').style.display = 'none';
+      showInitialGreeting();
+    }
+
+    function showInitialGreeting() {
+      document.querySelectorAll('.btn-quad').forEach(b => b.disabled = true);
+
+      const msg = `👋 ✨ <strong>¡Saludos, recluta!</strong><br><br>` +
+        `Te habla la <strong>Guardiana Diamante</strong> desde la consola del intercomunicador.<br><br>` +
+        `La navegación cartesiana está lista, pero antes de asignarte coordenadas... dime la verdad:<br><br>` +
+        `<strong style="color:var(--neon-yellow);">¿Sabes volar esta nave o no?</strong>`;
+
+      setGuardianText(msg, 20, () => {
+        const btnContainer = document.getElementById('guardian-buttons');
+        if (btnContainer) {
+          btnContainer.style.display = 'flex';
+          btnContainer.innerHTML = `
+            <button class="btn-dialogue green" onclick="acceptFlightCheck()">¡Sí, sé volar!</button>
+            <button class="btn-dialogue magenta" onclick="denyFlightCheck()">No, no sé...</button>
+          `;
+        }
+      });
+    }
+
+    function acceptFlightCheck() {
+      sfx.playQuadSelect();
+      document.querySelectorAll('.btn-quad').forEach(b => b.disabled = false);
+
+      const msg = `🚀 <strong>¡Excelente respuesta!</strong><br><br>` +
+        `Me alegra escuchar eso. Ajusta tus cinturones y prepárate.<br><br>` +
+        `Sintonizando frecuencias cartesianas para tu <strong>primer problema</strong>...`;
+
+      setGuardianText(msg, 20, () => {
+        setTimeout(() => {
+          resetGame();
+        }, 4000);
+      });
+    }
+
+    function denyFlightCheck() {
+      sfx.playClick();
+      const msg = `📖 <strong>¡Tranquilo, piloto!</strong><br><br>` +
+        `Ahí tienes el <strong>MANUAL DE VUELO</strong> en el panel izquierdo.<br><br>` +
+        `Léelo con atención para aprender los vectores X/Y y cuadrantes.`;
+
+      setGuardianText(msg, 20, () => {
+        const btnContainer = document.getElementById('guardian-buttons');
+        if (btnContainer) {
+          btnContainer.style.display = 'flex';
+          btnContainer.innerHTML = `
+            <button class="btn-dialogue cyan" onclick="openModal('manual-modal')">📖 Abrir Manual</button>
+            <button class="btn-dialogue green" onclick="acceptFlightCheck()">¡Ya estoy listo!</button>
+          `;
+        }
+      });
+      openModal('manual-modal');
+    }
+
+    window.onload = () => {
+      buildSwitchButtons();
+      initAsteroids();
+      setAllSwitches(true);
+      updateUI();
+      renderPixelGuardian();
+      requestAnimationFrame(renderGridLoop);
+    };
+
+    function buildSwitchButtons() {
+      const container = document.getElementById('switch-grid-container');
+      container.innerHTML = "";
+      AUX_SYSTEMS.forEach(sys => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-switch active';
+        btn.id = `sw-${sys.id}`;
+        btn.onclick = () => toggleSwitch(sys.id);
+        btn.innerHTML = `
+          <span class="emoji-icon">${sys.emoji}</span>
+          <span>${sys.name}</span>
+        `;
+        container.appendChild(btn);
+      });
+    }
+
+    function setAllSwitches(state) {
+      sfx.playMasterSwitch(state);
+      AUX_SYSTEMS.forEach(sys => {
+        switches[sys.id] = state;
+        const btn = document.getElementById(`sw-${sys.id}`);
+        if (btn) btn.classList.toggle('active', state);
+      });
+    }
+
+    function toggleSwitch(id) {
+      switches[id] = !switches[id];
+      sfx.playSwitch(switches[id]);
+      const btn = document.getElementById(`sw-${id}`);
+      if (btn) btn.classList.toggle('active', switches[id]);
+    }
+
+    function resetGame() {
+      score = 0;
+      sector = 1;
+      shields = 3;
+      shipPos = { x: 0, y: 0 };
+      shipTarget = { x: 0, y: 0 };
+      closeModal('gameover-modal');
+      setAllSwitches(true);
+      updateUI();
+      nextProblem();
+    }
+
+    function updateUI() {
+      document.getElementById('val-sector').innerText = sector;
+      document.getElementById('val-score').innerText = score;
+      document.getElementById('val-shields').innerText = "🛡️".repeat(Math.max(0, shields));
+      let rIdx = Math.min(Math.floor(score / 4), RANKS.length - 1);
+      document.getElementById('val-rank').innerText = RANKS[rIdx];
+    }
+
+    function triggerShieldDropFX() {
+      sfx.playShieldLoss();
+      const hudShields = document.getElementById('val-shields');
+      if (!hudShields) return;
+
+      const rect = hudShields.getBoundingClientRect();
+      const fx = document.createElement('div');
+      fx.className = 'falling-shield-fx';
+      fx.innerText = '🛡️';
+      fx.style.left = `${rect.left + 5}px`;
+      fx.style.top = `${rect.top}px`;
+
+      document.body.appendChild(fx);
+      fx.addEventListener('animationend', () => fx.remove());
+    }
+
+    function setActiveField(f) {
+      sfx.playClick();
+      activeField = f;
+      document.getElementById('field-X').classList.toggle('active-field', f === 'X');
+      document.getElementById('field-Y').classList.toggle('active-field', f === 'Y');
+    }
+
+    function switchField() { 
+      setActiveField(activeField === 'X' ? 'Y' : 'X'); 
+    }
+
+    function toggleSign(f, event) {
+      if (event) event.stopPropagation();
+      sfx.playClick();
+      if (f === 'X') signX *= -1;
+      if (f === 'Y') signY *= -1;
+      updateDisplayValues();
+    }
+
+    function pressKey(digit) {
+      sfx.playClick();
+      let curVal = activeField === 'X' ? valXStr : valYStr;
+      if (digit === 'DEL') {
+        curVal = curVal.slice(0, -1);
+        if (curVal === "" || curVal === "-") curVal = "0";
+      } else {
+        if (curVal === "0") curVal = digit;
+        else if (curVal.length < 3) {
+          let testVal = parseInt(curVal + digit);
+          if (testVal <= 100) curVal = (curVal + digit);
+        }
+      }
+      if (activeField === 'X') valXStr = curVal;
+      else valYStr = curVal;
+      updateDisplayValues();
+    }
+
+    function updateDisplayValues() {
+      document.getElementById('disp-X').innerText = (signX < 0 ? "-" : "+") + valXStr;
+      document.getElementById('disp-Y').innerText = (signY < 0 ? "-" : "+") + valYStr;
+    }
+
+    function getNumericX() { return parseInt(valXStr) * signX; }
+    function getNumericY() { return parseInt(valYStr) * signY; }
+
+    function selectQuad(q) {
+      sfx.playQuadSelect();
+      selectedQuadrant = q;
+      document.querySelectorAll('.btn-quad').forEach(b => b.classList.remove('selected'));
+      document.getElementById(`quad-${q}`).classList.add('selected');
+    }
+
+    function nextProblem() {
+      selectedQuadrant = "";
+      document.querySelectorAll('.btn-quad').forEach(b => b.classList.remove('selected'));
+      valXStr = "0"; signX = 1; valYStr = "0"; signY = 1;
+      setActiveField('X');
+      updateDisplayValues();
+
+      spawnEnemySquadron();
+
+      const randMode = Math.random();
+      let instructionText = "";
+
+      if (randMode < 0.15) {
+        AUX_SYSTEMS.forEach(s => requiredSwitches[s.id] = true);
+        instructionText = "<br>🟢 <strong style='color:var(--neon-green)'>[SISTEMAS AL 100%: ENCIENDE TODOS]</strong>";
+      } else if (randMode < 0.30) {
+        AUX_SYSTEMS.forEach(s => requiredSwitches[s.id] = false);
+        instructionText = "<br>🔴 <strong style='color:var(--neon-magenta)'>[MODO SIGILO: APAGA TODOS LOS SISTEMAS]</strong>";
+      } else {
+        let turnOffList = [];
+        let turnOnList = [];
+        AUX_SYSTEMS.forEach(s => {
+          let req = Math.random() > 0.5;
+          requiredSwitches[s.id] = req;
+          if (req) turnOnList.push(`${s.emoji}${s.name}`);
+          else turnOffList.push(`${s.emoji}${s.name}`);
+        });
+
+        if (turnOffList.length > 0) instructionText += `<br>🔴 <strong>DESACTIVAR:</strong> ${turnOffList.join(", ")}`;
+        if (turnOnList.length > 0) instructionText += `<br>🟢 <strong>ACTIVAR:</strong> ${turnOnList.join(", ")}`;
+      }
+
+      targetX = (Math.floor(Math.random() * 100) + 1) * (Math.random() > 0.5 ? 1 : -1);
+      targetY = (Math.floor(Math.random() * 100) + 1) * (Math.random() > 0.5 ? 1 : -1);
+
+      shipTarget = { x: targetX, y: targetY };
+
+      setGuardianText(
+        `✨ <strong>GRIMOIRE TÁCTICO DE LA GUARDIANA:</strong><br>` +
+        `🎯 <strong>Coordenada exacta (0 a 100):</strong><br>` +
+        `• Vector X = <strong>${targetX}</strong><br>` +
+        `• Vector Y = <strong>${targetY}</strong><br>` +
+        instructionText,
+        20
+      );
+
+      startTimer();
+    }
+
+    function renderGridLoop() {
+      const w = gridCanvas.width;
+      const h = gridCanvas.height;
+      const centerX = w / 2;
+      const centerY = h / 2;
+
+      const scaleX = (w / 2) / 115;
+      const scaleY = (h / 2) / 115;
+
+      gridCtx.clearRect(0, 0, w, h);
+
+      gridCtx.font = "bold 11px Segoe UI";
+      gridCtx.fillStyle = "rgba(0, 243, 255, 0.3)";
+      gridCtx.fillText("Cuadrante 1 (+,+)", centerX + 110, centerY - 80);
+      gridCtx.fillText("Cuadrante 2 (-,+)", centerX - 190, centerY - 80);
+      gridCtx.fillText("Cuadrante 3 (-,-)", centerX - 190, centerY + 90);
+      gridCtx.fillText("Cuadrante 4 (+,-)", centerX + 110, centerY + 90);
+
+      gridCtx.strokeStyle = "rgba(0, 243, 255, 0.12)";
+      gridCtx.lineWidth = 1;
+
+      for (let x = -100; x <= 100; x += 20) {
+        let px = centerX + x * scaleX;
+        gridCtx.beginPath(); gridCtx.moveTo(px, 0); gridCtx.lineTo(px, h); gridCtx.stroke();
+      }
+      for (let y = -100; y <= 100; y += 20) {
+        let py = centerY - y * scaleY;
+        gridCtx.beginPath(); gridCtx.moveTo(0, py); gridCtx.lineTo(w, py); gridCtx.stroke();
+      }
+
+      gridCtx.strokeStyle = "rgba(0, 243, 255, 0.85)";
+      gridCtx.lineWidth = 2;
+      gridCtx.beginPath(); gridCtx.moveTo(0, centerY); gridCtx.lineTo(w, centerY); gridCtx.stroke();
+      gridCtx.beginPath(); gridCtx.moveTo(centerX, 0); gridCtx.lineTo(centerX, h); gridCtx.stroke();
+
+      gridCtx.font = "9px monospace";
+      gridCtx.fillStyle = "rgba(0, 243, 255, 0.8)";
+      for (let x = -100; x <= 100; x += 20) {
+        if (x === 0) continue;
+        gridCtx.fillText(x.toString(), centerX + x * scaleX - 10, centerY + 12);
+      }
+      for (let y = -100; y <= 100; y += 20) {
+        if (y === 0) continue;
+        gridCtx.fillText(y.toString(), centerX + 4, centerY - y * scaleY + 3);
+      }
+
+      for (let ast of asteroids) {
+        ast.x += ast.vx; ast.y += ast.vy; ast.rot += ast.rotSpeed;
+        if (ast.x > 110) ast.x = -110; if (ast.x < -110) ast.x = 110;
+        if (ast.y > 110) ast.y = -110; if (ast.y < -110) ast.y = 110;
+
+        gridCtx.save();
+        gridCtx.translate(centerX + ast.x * scaleX, centerY - ast.y * scaleY);
+        gridCtx.rotate(ast.rot);
+        gridCtx.strokeStyle = "rgba(255, 170, 0, 0.3)";
+        gridCtx.fillStyle = "rgba(20, 15, 10, 0.5)";
+        gridCtx.lineWidth = 1.5;
+        gridCtx.beginPath(); gridCtx.arc(0, 0, ast.size, 0, Math.PI * 2);
+        gridCtx.fill(); gridCtx.stroke();
+        gridCtx.restore();
+      }
+
+      for (let enemy of enemyShips) {
+        let edx = enemy.targetX - enemy.x;
+        let edy = enemy.targetY - enemy.y;
+
+        enemy.x += edx * 0.015;
+        enemy.y += edy * 0.015;
+
+        let desiredEnemyAngle = Math.atan2(-edy, edx) + Math.PI / 2;
+        let eAngleDiff = desiredEnemyAngle - enemy.angle;
+        while (eAngleDiff < -Math.PI) eAngleDiff += Math.PI * 2;
+        while (eAngleDiff > Math.PI) eAngleDiff -= Math.PI * 2;
+        enemy.angle += eAngleDiff * 0.04;
+
+        let ePx = centerX + enemy.x * scaleX;
+        let ePy = centerY - enemy.y * scaleY;
+
+        enemy.trail.push({ x: ePx, y: ePy, alpha: 0.8 });
+        if (enemy.trail.length > 12) enemy.trail.shift();
+
+        for (let t of enemy.trail) {
+          t.alpha -= 0.05;
+          gridCtx.fillStyle = enemy.color;
+          gridCtx.globalAlpha = Math.max(0, t.alpha * 0.4);
+          gridCtx.beginPath(); gridCtx.arc(t.x, t.y, 2 * enemy.scale, 0, Math.PI * 2); gridCtx.fill();
+        }
+        gridCtx.globalAlpha = 1.0;
+
+        gridCtx.save();
+        gridCtx.translate(ePx, ePy);
+        gridCtx.rotate(enemy.angle);
+        gridCtx.scale(enemy.scale, enemy.scale);
+        gridCtx.strokeStyle = enemy.color;
+        gridCtx.fillStyle = enemy.color;
+        gridCtx.lineWidth = 2;
+        gridCtx.shadowBlur = 10;
+        gridCtx.shadowColor = enemy.glow;
+
+        gridCtx.beginPath();
+        gridCtx.moveTo(0, -10);
+        gridCtx.lineTo(7, 8);
+        gridCtx.lineTo(0, 4);
+        gridCtx.lineTo(-7, 8);
+        gridCtx.closePath();
+        gridCtx.fill(); gridCtx.stroke();
+        gridCtx.restore();
+      }
+
+      let targetPx = centerX + targetX * scaleX;
+      let targetPy = centerY - targetY * scaleY;
+      gridCtx.save();
+      gridCtx.strokeStyle = "#ff0055";
+      gridCtx.lineWidth = 1.5;
+      gridCtx.beginPath();
+      gridCtx.arc(targetPx, targetPy, 10 + Math.sin(Date.now() * 0.01) * 3, 0, Math.PI * 2);
+      gridCtx.stroke();
+      gridCtx.restore();
+
+      let dx = shipTarget.x - shipPos.x;
+      let dy = shipTarget.y - shipPos.y;
+      
+      shipPos.x += dx * 0.025;
+      shipPos.y += dy * 0.025;
+
+      let desiredAngle = Math.atan2(-dy, dx) + Math.PI / 2;
+      let angleDiff = desiredAngle - shipAngle;
+      
+      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+      shipAngle += angleDiff * 0.05;
+
+      let floatOffset = Math.sin(Date.now() * 0.003) * 0.5;
+
+      let shipPx = centerX + shipPos.x * scaleX;
+      let shipPy = centerY - (shipPos.y + floatOffset) * scaleY;
+
+      shipTrail.push({ x: shipPx, y: shipPy, alpha: 1.0 });
+      if (shipTrail.length > 18) shipTrail.shift();
+
+      for (let t of shipTrail) {
+        t.alpha -= 0.05;
+        gridCtx.fillStyle = `rgba(0, 243, 255, ${Math.max(0, t.alpha * 0.5)})`;
+        gridCtx.beginPath(); gridCtx.arc(t.x, t.y, 2.5, 0, Math.PI * 2); gridCtx.fill();
+      }
+
+      gridCtx.save();
+      gridCtx.translate(shipPx, shipPy);
+      gridCtx.rotate(shipAngle);
+      gridCtx.strokeStyle = "#00ff66";
+      gridCtx.fillStyle = "rgba(0, 255, 102, 0.35)";
+      gridCtx.lineWidth = 2;
+      gridCtx.shadowBlur = 12;
+      gridCtx.shadowColor = "#00ff66";
+
+      gridCtx.beginPath();
+      gridCtx.moveTo(0, -12);
+      gridCtx.lineTo(8, 9);
+      gridCtx.lineTo(0, 4);
+      gridCtx.lineTo(-8, 9);
+      gridCtx.closePath();
+      gridCtx.fill(); gridCtx.stroke();
+      gridCtx.restore();
+
+      requestAnimationFrame(renderGridLoop);
+    }
+
+    function startTimer(resumeTime = null) {
+      clearInterval(timerInterval);
+      timeRemaining = (resumeTime !== null) ? resumeTime : 100;
+      isPaused = false;
+
+      const timeLimitSeconds = Math.max(22, 60 - sector * 3);
+      const decrementPerMs = 100 / (timeLimitSeconds * 1000); 
+      const intervalMs = 50; 
+      const decrementPerTick = decrementPerMs * intervalMs;
+
+      timerInterval = setInterval(() => {
+        if (!isPaused) { 
+          timeRemaining -= decrementPerTick;
+          const bar = document.getElementById('timer-bar');
+          bar.style.width = Math.max(0, timeRemaining) + "%";
+          
+          if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            handleError("¡Tiempo de cálculo agotado!");
+          }
+        }
+      }, intervalMs);
+    }
+
+    function getTargetQuadrant(x, y) {
+      if (x > 0 && y > 0) return "1";
+      if (x < 0 && y > 0) return "2";
+      if (x < 0 && y < 0) return "3";
+      if (x > 0 && y < 0) return "4";
+      return "";
+    }
+
+    function executeManeuver() {
+      const userX = getNumericX();
+      const userY = getNumericY();
+
+      for (let sys of AUX_SYSTEMS) {
+        if (switches[sys.id] !== requiredSwitches[sys.id]) {
+          let reqStatus = requiredSwitches[sys.id] ? "ENCENDIDO" : "APAGADO";
+          handleError(`Fallo de configuración: ${sys.emoji} ${sys.name} debía estar ${reqStatus}.`);
+          return;
+        }
+      }
+
+      if (!selectedQuadrant) {
+        handleError("¡Orden incompleta! Se ejecutó la maniobra sin seleccionar el **Cuadrante Táctico**.");
+        return;
+      }
+
+      const correctQuad = getTargetQuadrant(targetX, targetY);
+      if (selectedQuadrant !== correctQuad) {
+        handleError(`Cuadrante erróneo. El vector pertenecía al **Cuadrante ${correctQuad}**.`);
+        return;
+      }
+
+      if (userX === targetX && userY === targetY) {
+        sfx.playSuccess();
+        score++;
+        if (score % 3 === 0) sector++;
+        setGuardianText("✨ <strong>¡SALTO EXITOSO!</strong> Coordenadas calculadas a la perfección.", 20);
+        updateUI();
+        setTimeout(nextProblem, 1200);
+      } else {
+        handleError(`Error de coordenadas. La posición buscada era (${targetX}, ${targetY}).`);
+      }
+    }
+
+    function handleError(reason) {
+      sfx.playError();
+      shields--;
+      triggerShieldDropFX();
+      updateUI();
+      
+      setGuardianText("❌ " + reason, 15, () => {
+        if (shields <= 0) {
+          clearInterval(timerInterval);
+          showGameOver();
+        } else {
+          setTimeout(nextProblem, 4000);
+        }
+      });
+    }
+
+    function showGameOver() {
+      document.getElementById('go-sector').innerText = sector;
+      document.getElementById('go-score').innerText = score;
+      openModal('gameover-modal');
+    }
+
+    function openModal(id) {
+      sfx.playClick();
+      document.getElementById(id).style.display = 'flex';
+      if (id === 'manual-modal' || id === 'ranks-modal') {
+        isPaused = true;
+      }
+    }
+
+    function closeModal(id) {
+      sfx.playClick();
+      document.getElementById(id).style.display = 'none';
+      if ((id === 'manual-modal' || id === 'ranks-modal') && shields > 0) {
+        isPaused = false;
+      }
+    }
+  </script>
+</body>
+</html>
